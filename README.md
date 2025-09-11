@@ -1,6 +1,6 @@
 # Banco-de-Dados-Polyglot-Persistence.
 
-Augusto Pereira Teixeira - 24.123.008-5
+Augusto Pereira Teixeira - 24.123.008-5 <br>
 João Pedro Bazoli Palma - 24.123.041-6
 
 ## Instalação e uso
