@@ -1,14 +1,16 @@
-# Banco-de-Dados-Polyglot-Persistence.
+# Banco de Dados Polyglot Persistence
 
 Augusto Pereira Teixeira - 24.123.008-5 <br>
 João Pedro Bazoli Palma - 24.123.041-6
 
-## Instalação e uso
-Tenha Docker Instalado
-Tenha Java instalado
-(De preferência ambos em versões recentes)
+## Dependências
+- Docker
+- Docker Compose
+- Java (JDK mais recente)
+- Driver JDBC do PostgreSQL (baixar [aqui](https://jdbc.postgresql.org/download))
 
-inicie os bancos com:
+## Uso
+Inicie os bancos com:
 
 ```bash
 docker compose up -d
