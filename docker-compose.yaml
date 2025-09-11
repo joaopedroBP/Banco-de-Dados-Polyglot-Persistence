@@ -1,0 +1,38 @@
+services:
+
+  postgres:
+    image: 'postgres:15.6'
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - bancosproj
+
+
+  mongodb:
+    image: 'mongodb/mongodb-community-server:6.0.9-ubi9'
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data/mongodb:/data
+    networks:
+      - bancosproj
+
+  scylla:
+    image: scylladb/scylla:5.2
+    container_name: scylla
+    command: --smp 1 --memory 750M --overprovisioned 1
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./data/scylla:/var/lib/scylla
+    networks:
+      - bancosproj
+
+networks:
+  bancosproj:
