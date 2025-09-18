@@ -13,26 +13,22 @@ import(
 )
 
 func main(){
-	docs := "www.mongodb.com/docs/drivers/go/current/"
-	uri := "mongodb://localhost:27017"
-	
-	client, err := mongo.Connect(context.TODO(),options.Client().ApplyURI(uri))
+	clientOptions := options.Client().ApplyURI("mongoDB://localhost:27017")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.second)
+
+	defer cancel()
+	client,err := mongo.Connect(ctx,clientOptions)
 	if err != nil {
-		panic("erro")
+		log.fatal(err)
 	}
 
-	defer func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
-			panic("erro")
-		}
-	}()
-
-	err = client.Ping(context.TODO(),nil)
+	err = client.Ping(ctx, readpref.Primary())
 	if err != nil{
-		panic("erro")
+		log.Fatal(err)
 	}
 
-	fmt.Println("Conexão com o mongo efetuada com exito!")
+	fmt.Println("Conectado com sucesso!")
 
 	
 }
