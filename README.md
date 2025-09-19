@@ -8,6 +8,7 @@ João Pedro Bazoli Palma - 24.123.041-6
 - Docker Compose
 - Java (JDK mais recente)
 - Driver JDBC do PostgreSQL (baixar [aqui](https://jdbc.postgresql.org/download))
+- GoLang (versão mais recente)
 
 ## Uso
 Inicie os bancos com:
