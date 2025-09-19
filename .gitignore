@@ -27,3 +27,7 @@ replay_pid*
 data/postgres/
 data/mongodb/
 data/scylla/
+
+# Rust/Cargo
+/target/
+
