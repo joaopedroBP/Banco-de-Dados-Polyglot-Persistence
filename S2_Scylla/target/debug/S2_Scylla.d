@@ -1,0 +1,1 @@
+/home/joaopedrobp/Documentos/Banco-de-Dados-Polyglot-Persistence-/S2_Scylla/target/debug/S2_Scylla: /home/joaopedrobp/Documentos/Banco-de-Dados-Polyglot-Persistence-/S2_Scylla/src/db.rs /home/joaopedrobp/Documentos/Banco-de-Dados-Polyglot-Persistence-/S2_Scylla/src/main.rs /home/joaopedrobp/Documentos/Banco-de-Dados-Polyglot-Persistence-/S2_Scylla/src/result.rs
