@@ -31,3 +31,5 @@ data/scylla/
 # Rust/Cargo
 /target/
 
+# S1
+S1/s1
