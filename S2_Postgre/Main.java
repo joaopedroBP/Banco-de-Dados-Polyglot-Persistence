@@ -51,7 +51,7 @@ public class Main{
                         CREATE TABLE IF NOT EXISTS artists (
                             artist_id VARCHAR(100) PRIMARY KEY,  -- nome do artista
                             user_id VARCHAR(100) REFERENCES users(user_id) ON DELETE CASCADE,
-                            descricao TEXTj  
+                            descricao TEXT 
                         );
                         """;
 
