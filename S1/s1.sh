@@ -1,0 +1,375 @@
+#!/usr/bin/env bash
+
+set -e
+
+# mostp = most played
+accepted_subcommands=("user" "artist" "album" "track" "playlist" "genre" "history" "like" "playtime" "mostp")
+
+# add artist to DB
+function handleadd_artist() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 add artist <artist_name> <description>"
+    exit 1
+  fi
+  artist_name="$3"
+  description="$4"
+  # prints artist id
+  ./s2postgre.sh add artist "$artist_name" "$description"
+}
+
+# add album to DB
+function handleadd_album() {
+  if [[ -z "$6" ]]; then
+    echo "Usage: $0 add album <album_name> <artist_id> <release_date> <genre_id>"
+    exit 1
+  fi
+  album_name="$3"
+  artist_id="$4"
+  release_year="$5"
+  genre_id="$6"
+  # prints album id
+  ./s2postgre.sh add album "$album_name" "$artist_id" "$release_year" "$genre_id"
+}
+
+# add track to DB
+function handleadd_track() {
+  if [[ -z "$6" ]]; then
+    echo "Usage: $0 add track <track_name> <album_id> <duration> <album_num>"
+    exit 1
+  fi
+  track_name="$3"
+  album_id="$4"
+  duration="$5"
+  album_num="$6"
+  # prints track id
+  ./s2postgre.sh add track "$track_name" "$album_id" "$duration" "$album_num"
+}
+
+# add playlist to DB
+function handleadd_playlist() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 add playlist <user_id> <playlist_name>"
+    exit 1
+  fi
+  user_id="$3"
+  playlist_name="$4"
+  description="$5"
+  # prints playlist id
+  ./s2mongo add playlist "$user_id" "$playlist_name"
+}
+
+# add genre to DB
+function handleadd_genre() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 add genre <genre_name>"
+    exit 1
+  fi
+  genre_name="$3"
+  # prints genre id
+  ./s2postgre.sh add genre "$genre_name"
+}
+
+# add song to user's listening history
+function handleadd_history() {
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 add history <user_id> <track_id> <played_at>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  played_at="$5"
+  # prints confirmation
+  ./s2scylla add "history" "$user_id" "$track_id" "$played_at"
+}
+
+# add like to user's liked songs
+function handleadd_like() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 add like <user_id> <track_id>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  # prints confirmation
+  ./s2mongo add track "$user_id" likes "$track_id"
+}
+
+# create likes playlist for new user
+function handleadd_likeslist() {
+  user_id="$1"
+  # prints playlist creation confirmation
+  ./s2mongo add playlist "$user_id" "likes"
+}
+
+# add playtime for a track for a user
+function handleadd_playtime() {
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 add playtime <user_id> <track_id> <playtime_seconds>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  playtime_seconds="$5"
+  # prints confirmation
+  ./s2scylla add "playtime" "$user_id" "$track_id" "$playtime_seconds"
+}
+
+# add user to DB
+function handleadd_user() {
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 add user <username> <email> <password>"
+    exit 1
+  fi
+  username="$3"
+  email="$4"
+  password="$5"
+  newuser="$(./s2postgre.sh user add "$3" "$4" "$5")"
+  handleadd_likeslist "$newuser"
+}
+
+# remove user from DB
+function handlerm_user() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 "rm" user <user_id>"
+    exit 1
+  fi
+  user_id="$3"
+  ./s2postgre.sh user "rm" "$user_id"
+}
+
+# remove artist from DB
+function handlerm_artist() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 "rm" artist <artist_id>"
+    exit 1
+  fi
+  artist_id="$3"
+  ./s2postgre.sh "rm" artist "$artist_id"
+}
+
+# remove album from DB
+function handlerm_album() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 "rm" album <album_id>"
+    exit 1
+  fi
+  album_id="$3"
+  ./s2postgre.sh "rm" album "$album_id"
+}
+
+# remove track from DB
+function handlerm_track() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 "rm" track <track_id>"
+    exit 1
+  fi
+  track_id="$3"
+  ./s2postgre.sh "rm" track "$track_id"
+}
+
+# remove playlist from DB
+function handlerm_playlist() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 "rm" playlist <user_id> <playlist_id>"
+    exit 1
+  fi
+  user_id="$3"
+  playlist_id="$4"
+  ./s2mongo "rm" playlist "$user_id" "$playlist_id"
+}
+
+# remove genre from DB
+function handlerm_genre() {
+  if [[ -z "$3" ]]; then
+    echo "Usage: $0 "rm" genre <genre_id>"
+    exit 1
+  fi
+  genre_id="$3"
+  ./s2postgre.sh "rm" genre "$genre_id"
+}
+
+# remove track from history
+function handlerm_history() {
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 "rm" history <user_id> <track_id> <played_at>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  played_at="$5"
+  ./s2scylla "rm" "history" "$user_id" "$track_id" "$played_at"
+}
+
+# remove like
+function handlerm_like() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 "rm" like <user_id> <track_id>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  ./s2mongo "rm" track "$user_id" likes "$track_id"
+}
+
+# remove playtime entry
+function handlerm_playtime() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 "rm" playtime <user_id> <track_id>"
+    exit 1
+  fi
+  user_id="$3"
+  track_id="$4"
+  ./s2scylla "rm" "playtime" "$user_id" "$track_id"
+}
+
+# list all users
+function handleuser_list() {
+  ./s2postgre.sh list user
+}
+
+# list all artists
+function handleartist_list() {
+  ./s2postgre.sh list artist
+}
+
+# list all albums
+function handlealbum_list() {
+  ./s2postgre.sh list album
+}
+
+# list tracks
+function handletrack_list() {
+  ./s2postgre.sh list track
+}
+
+# list playlists for a user
+function handleplaylist_list() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 list playlist <user_id>"
+    exit 1
+  fi
+  user_id="$3"
+  ./s2mongo list playlist "$user_id"
+}
+
+# list all genres
+function handlegenre_list() {
+  ./s2postgre.sh list genre
+}
+
+# list listening history for a user
+function handlehistory_list() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 list history <user_id>"
+    exit 1
+  fi
+  user_id="$3"
+  ./s2scylla list "history" "$user_id"
+}
+
+# list liked songs for a user
+function handlelike_list() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 list like <user_id>"
+    exit 1
+  fi
+  user_id="$3"
+  ./s2mongo list track "$user_id" likes
+}
+
+# list playtime for a user
+function handleplaytime_list() {
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 list playtime <user_id>"
+    exit 1
+  fi
+  user_id="$3"
+  ./s2scylla list "playtime" "$user_id"
+}
+
+# list most played from user
+function handlemostp_list() {
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 list mostp <user_id> <top_num>"
+    exit 1
+  fi
+  user_id="$3"
+  top_num="$4"
+  ./s2scylla list "mostp" "$user_id" "$top_num"
+}
+
+function handleadd() {
+  for sub in "${accepted_subcommands[@]}"; do
+    case "$2" in
+      "user") handleadd_user "$@" ;;
+      "artist") handleadd_artist "$@" ;;
+      "album") handleadd_album "$@" ;;
+      "track") handleadd_track "$@" ;;
+      "playlist") handleadd_playlist "$@" ;;
+      "genre") handleadd_genre "$@" ;;
+      "history") handleadd_history "$@" ;;
+      "like") handleadd_like "$@" ;;
+      "playtime") handleadd_playtime "$@" ;;
+      # mostp is not added, it's queried
+      *) echo "Unknown subcommand for add: $2"; exit 1 ;;
+    esac
+  done
+}
+
+function handlerm() {
+  for sub in "${accepted_subcommands[@]}"; do
+    case "$2" in
+      "user") handlerm_user "$@" ;;
+      "artist") handlerm_artist "$@" ;;
+      "album") handlerm_album "$@" ;;
+      "track") handlerm_track "$@" ;;
+      "playlist") handlerm_playlist "$@" ;;
+      "genre") handlerm_genre "$@" ;;
+      "history") handlerm_history "$@" ;;
+      "like") handlerm_like "$@" ;;
+      "playtime") handlerm_playtime "$@" ;;
+      # mostp is not removed, it's queried
+      *) echo "Unknown subcommand for rm: $2"; exit 1 ;;
+    esac
+  done
+}
+
+function handlelist() {
+  for sub in "${accepted_subcommands[@]}"; do
+    case "$2" in
+      "user") handleuser_list "$@" ;;
+      "artist") handleartist_list "$@" ;;
+      "album") handlealbum_list "$@" ;;
+      "track") handletrack_list "$@" ;;
+      "playlist") handleplaylist_list "$@" ;;
+      "genre") handlegenre_list "$@" ;;
+      "history") handlehistory_list "$@" ;;
+      "like") handlelike_list "$@" ;;
+      "playtime") handleplaytime_list "$@" ;;
+      "mostp") handlemostp_list "$@" ;;
+      *) echo "Unknown subcommand for list: $2"; exit 1 ;;
+    esac
+  done
+}
+
+function handleget() {
+  # user, artist, album, track, genre, playlist
+  for sub in "${accepted_subcommands[@]}"; do
+    case "$2" in
+      "user") ./s2postgre.sh get user "$3" ;;
+      "artist") ./s2postgre.sh get artist "$3" ;;
+      "album") ./s2postgre.sh get album "$3" ;;
+      "track") ./s2postgre.sh get track "$3" ;;
+      "genre") ./s2postgre.sh get genre "$3" ;;
+      "playlist") ./s2mongo get playlist "$3" "$4" ;;
+    esac
+  done
+  
+}
+
+case "$1" in
+  "add") handleadd "$@" ;;
+  "rm") handlerm "$@" ;;
+  "list") handlelist "$@" ;;
+  "get") handleget "$@" ;;
+esac
