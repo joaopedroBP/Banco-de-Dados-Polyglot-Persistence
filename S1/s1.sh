@@ -123,8 +123,8 @@ function handleadd_user() {
   username="$3"
   email="$4"
   password="$5"
-  newuser="$(./s2postgre.sh user add "$3" "$4" "$5")"
-  handleadd_likeslist "$newuser"
+  ./s2postgre.sh user add "$3" "$4" "$5"
+  handleadd_likeslist "$username"
 }
 
 # remove user from DB
