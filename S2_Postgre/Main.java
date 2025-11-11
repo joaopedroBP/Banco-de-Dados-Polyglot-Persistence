@@ -47,7 +47,7 @@ public class Main{
                         );
                         """;
 
-                    String createArtist = """
+                    String createArtists = """
                         CREATE TABLE IF NOT EXISTS artists (
                             artist_id VARCHAR(100) PRIMARY KEY,  -- nome do artista
                             user_id VARCHAR(100) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ public class Main{
                         );
                         """;
 
-                    String createGenre = """
+                    String createGenres = """
                         CREATE TABLE IF NOT EXISTS genres (
                             genre_id SERIAL PRIMARY KEY,
                             nome VARCHAR(100) NOT NULL UNIQUE,
@@ -63,21 +63,21 @@ public class Main{
                         );
                         """;
 
-                    String createAlbum = """
+                    String createAlbums = """
                         CREATE TABLE IF NOT EXISTS albums (
                             album_id SERIAL PRIMARY KEY,
-                            artist_id VARCHAR(100) REFERENCES artist(artist_id) ON DELETE CASCADE,
-                            genre_id INT REFERENCES genre(genre_id),
+                            artist_id VARCHAR(100) REFERENCES artists(artist_id) ON DELETE CASCADE,
+                            genre_id INT REFERENCES genres(genre_id),
                             titulo VARCHAR(100) NOT NULL,
                             data_lancamento DATE,
                             capa_url TEXT
                         );
                         """;
 
-                    String createTrack = """
+                    String createTracks = """
                         CREATE TABLE IF NOT EXISTS tracks (
                             track_id SERIAL PRIMARY KEY,
-                            album_id INT REFERENCES album(album_id) ON DELETE CASCADE,
+                            album_id INT REFERENCES albums(album_id) ON DELETE CASCADE,
                             titulo VARCHAR(100) NOT NULL,
                             duracao_segundos INT, 
                             numero_faixa INT 
@@ -85,10 +85,10 @@ public class Main{
                         """;
 
                     stmt.execute(createUsers);
-                    stmt.execute(createArtist);
-                    stmt.execute(createGenre);
-                    stmt.execute(createAlbum);
-                    stmt.execute(createTrack);
+                    stmt.execute(createArtists);
+                    stmt.execute(createGenres);
+                    stmt.execute(createAlbums);
+                    stmt.execute(createTracks);
 
           }       
       }
