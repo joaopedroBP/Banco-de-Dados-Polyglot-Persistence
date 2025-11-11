@@ -1,8 +1,7 @@
 /*
  *Compile com: javac -cp "postgresql-42.7.3.jar" Main.java
  *Rode com java -cp ".:postgresql-42.7.3.jar" Main
- * SOMENTE LINUX
- */
+*/
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,17 +11,18 @@ import java.sql.SQLException;
 
 
 public class Main{
-    public static void createUser(Connection con, String userId, String email, String senha) {
+    public static String createUser(Connection con, String userId, String email, String senha) {
         String sql = "INSERT INTO users (user_id, email, senha) VALUES (?, ?, ?);";
         try (PreparedStatement pstmt = con.prepareStatement(sql)) {
             pstmt.setString(1, userId);
             pstmt.setString(2, email);
             pstmt.setString(3, senha);
             pstmt.executeUpdate();
-            System.out.println("Usuário '" + userId + "' criado com sucesso!");
+            return userId;
         } catch (SQLException e) {
-            System.out.println("Erro ao criar usuário '" + userId + "':");
+            System.out.println("Erro ao criar usuário '" + userId + "':"); 
             e.printStackTrace();
+            return "";
         }
     }
   
@@ -51,7 +51,7 @@ public class Main{
                         CREATE TABLE IF NOT EXISTS artists (
                             artist_id VARCHAR(100) PRIMARY KEY,  -- nome do artista
                             user_id VARCHAR(100) REFERENCES users(user_id) ON DELETE CASCADE,
-                            descricao TEXT 
+                            descricao TEXT
                         );
                         """;
 
