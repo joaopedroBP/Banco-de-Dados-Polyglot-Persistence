@@ -50,15 +50,16 @@ function handleadd_track() {
 
 # add playlist to DB
 function handleadd_playlist() {
-  if [[ -z "$4" ]]; then
-    echo "Usage: $0 add playlist <user_id> <playlist_name>"
+  if [[ -z "$5" ]]; then
+    echo "Usage: $0 add playlist <user_id> <playlist_name> <is_public>"
+    echo "Note: is_public should be 'true' or 'false'"
     exit 1
   fi
   user_id="$3"
   playlist_name="$4"
   description="$5"
   # prints playlist id
-  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "$playlist_name"
+  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "$playlist_name" "$is_public"
   exit 0
 }
 
@@ -105,7 +106,7 @@ function handleadd_like() {
 function handleadd_likeslist() {
   user_id="$1"
   # prints playlist creation confirmation
-  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "likes"
+  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "likes" "false"
   exit 0
 }
 
