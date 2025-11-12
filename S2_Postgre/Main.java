@@ -572,7 +572,8 @@ public class Main{
             check = checkAlbum(con,args[2]);
             break;
           case "gettrack":
-            check = getTrack(con,args[2]);
+            getTrack(con,args[2]);
+	    break;
         }
       }
     }catch (Exception e){
