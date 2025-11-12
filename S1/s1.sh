@@ -2,7 +2,7 @@
 
 set -e
 
-# mostp = most played
+# mostp = most playem
 accepted_subcommands=("user" "artist" "album" "track" "playlist" "genre" "history" "like" "playtime" "mostp")
 
 # add artist to DB
@@ -15,6 +15,7 @@ function handleadd_artist() {
   description="$4"
   # prints artist id
   ./s2postgre.sh add artist "$artist_name" "$description"
+  exit 0
 }
 
 # add album to DB
@@ -29,6 +30,7 @@ function handleadd_album() {
   genre_id="$6"
   # prints album id
   ./s2postgre.sh add album "$album_name" "$artist_id" "$release_year" "$genre_id"
+  exit 0
 }
 
 # add track to DB
@@ -43,6 +45,7 @@ function handleadd_track() {
   album_num="$6"
   # prints track id
   ./s2postgre.sh add track "$track_name" "$album_id" "$duration" "$album_num"
+  exit 0 
 }
 
 # add playlist to DB
@@ -56,6 +59,7 @@ function handleadd_playlist() {
   description="$5"
   # prints playlist id
   ./s2mongo add playlist "$user_id" "$playlist_name"
+  exit 0
 }
 
 # add genre to DB
@@ -67,6 +71,7 @@ function handleadd_genre() {
   genre_name="$3"
   # prints genre id
   ./s2postgre.sh add genre "$genre_name"
+  exit 0
 }
 
 # add song to user's listening history
@@ -80,6 +85,7 @@ function handleadd_history() {
   played_at="$5"
   # prints confirmation
   ./s2scylla add "history" "$user_id" "$track_id" "$played_at"
+  exit 0
 }
 
 # add like to user's liked songs
@@ -92,6 +98,7 @@ function handleadd_like() {
   track_id="$4"
   # prints confirmation
   ./s2mongo add track "$user_id" likes "$track_id"
+  exit 0
 }
 
 # create likes playlist for new user
@@ -99,6 +106,7 @@ function handleadd_likeslist() {
   user_id="$1"
   # prints playlist creation confirmation
   ./s2mongo add playlist "$user_id" "likes"
+  exit 0
 }
 
 # add playtime for a track for a user
@@ -112,6 +120,7 @@ function handleadd_playtime() {
   playtime_seconds="$5"
   # prints confirmation
   ./s2scylla add "playtime" "$user_id" "$track_id" "$playtime_seconds"
+  exit 0
 }
 
 # add user to DB
@@ -123,8 +132,9 @@ function handleadd_user() {
   username="$3"
   email="$4"
   password="$5"
-  ./s2postgre.sh user add "$3" "$4" "$5"
+  ./s2postgre.sh add user "$3" "$4" "$5"
   handleadd_likeslist "$username"
+  exit 0
 }
 
 # remove user from DB
@@ -134,7 +144,8 @@ function handlerm_user() {
     exit 1
   fi
   user_id="$3"
-  ./s2postgre.sh user "rm" "$user_id"
+  ./s2postgre.sh "rm" user "$user_id"
+  exit 0
 }
 
 # remove artist from DB
@@ -145,6 +156,7 @@ function handlerm_artist() {
   fi
   artist_id="$3"
   ./s2postgre.sh "rm" artist "$artist_id"
+  exit 0
 }
 
 # remove album from DB
@@ -155,6 +167,7 @@ function handlerm_album() {
   fi
   album_id="$3"
   ./s2postgre.sh "rm" album "$album_id"
+  exit 0
 }
 
 # remove track from DB
@@ -165,6 +178,7 @@ function handlerm_track() {
   fi
   track_id="$3"
   ./s2postgre.sh "rm" track "$track_id"
+  exit 0
 }
 
 # remove playlist from DB
@@ -176,6 +190,7 @@ function handlerm_playlist() {
   user_id="$3"
   playlist_id="$4"
   ./s2mongo "rm" playlist "$user_id" "$playlist_id"
+  exit 0
 }
 
 # remove genre from DB
@@ -186,6 +201,7 @@ function handlerm_genre() {
   fi
   genre_id="$3"
   ./s2postgre.sh "rm" genre "$genre_id"
+  exit 0
 }
 
 # remove track from history
@@ -198,6 +214,7 @@ function handlerm_history() {
   track_id="$4"
   played_at="$5"
   ./s2scylla "rm" "history" "$user_id" "$track_id" "$played_at"
+  exit 0
 }
 
 # remove like
@@ -209,6 +226,7 @@ function handlerm_like() {
   user_id="$3"
   track_id="$4"
   ./s2mongo "rm" track "$user_id" likes "$track_id"
+  exit 0
 }
 
 # remove playtime entry
@@ -220,26 +238,31 @@ function handlerm_playtime() {
   user_id="$3"
   track_id="$4"
   ./s2scylla "rm" "playtime" "$user_id" "$track_id"
+  exit 0
 }
 
 # list all users
 function handleuser_list() {
   ./s2postgre.sh list user
+  exit 0
 }
 
 # list all artists
 function handleartist_list() {
   ./s2postgre.sh list artist
+  exit 0
 }
 
 # list all albums
 function handlealbum_list() {
   ./s2postgre.sh list album
+  exit 0
 }
 
 # list tracks
 function handletrack_list() {
   ./s2postgre.sh list track
+  exit 0
 }
 
 # list playlists for a user
@@ -250,11 +273,13 @@ function handleplaylist_list() {
   fi
   user_id="$3"
   ./s2mongo list playlist "$user_id"
+  exit 0
 }
 
 # list all genres
 function handlegenre_list() {
   ./s2postgre.sh list genre
+  exit 0
 }
 
 # list listening history for a user
@@ -265,6 +290,7 @@ function handlehistory_list() {
   fi
   user_id="$3"
   ./s2scylla list "history" "$user_id"
+  exit 0
 }
 
 # list liked songs for a user
@@ -275,6 +301,7 @@ function handlelike_list() {
   fi
   user_id="$3"
   ./s2mongo list track "$user_id" likes
+  exit 0
 }
 
 # list playtime for a user
@@ -285,6 +312,7 @@ function handleplaytime_list() {
   fi
   user_id="$3"
   ./s2scylla list "playtime" "$user_id"
+  exit 0
 }
 
 # list most played from user
@@ -296,6 +324,7 @@ function handlemostp_list() {
   user_id="$3"
   top_num="$4"
   ./s2scylla list "mostp" "$user_id" "$top_num"
+  exit 0
 }
 
 function handleadd() {
@@ -314,6 +343,7 @@ function handleadd() {
       *) echo "Unknown subcommand for add: $2"; exit 1 ;;
     esac
   done
+  exit 0
 }
 
 function handlerm() {
@@ -332,6 +362,7 @@ function handlerm() {
       *) echo "Unknown subcommand for rm: $2"; exit 1 ;;
     esac
   done
+  exit 0
 }
 
 function handlelist() {
@@ -350,6 +381,7 @@ function handlelist() {
       *) echo "Unknown subcommand for list: $2"; exit 1 ;;
     esac
   done
+  exit 0
 }
 
 function handleget() {
@@ -364,7 +396,7 @@ function handleget() {
       "playlist") ./s2mongo get playlist "$3" "$4" ;;
     esac
   done
-  
+  exit 0
 }
 
 case "$1" in
@@ -372,4 +404,6 @@ case "$1" in
   "rm") handlerm "$@" ;;
   "list") handlelist "$@" ;;
   "get") handleget "$@" ;;
+  *) echo "Unknown command: $1"; exit 1 ;;
 esac
+exit 0
