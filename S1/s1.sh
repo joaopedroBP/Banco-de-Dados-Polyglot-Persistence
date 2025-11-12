@@ -58,7 +58,7 @@ function handleadd_playlist() {
   playlist_name="$4"
   description="$5"
   # prints playlist id
-  ./s2mongo add playlist "$user_id" "$playlist_name"
+  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "$playlist_name"
   exit 0
 }
 
@@ -97,7 +97,7 @@ function handleadd_like() {
   user_id="$3"
   track_id="$4"
   # prints confirmation
-  ./s2mongo add track "$user_id" likes "$track_id"
+  ./../S2_Mongo/S2_Mongo add track "$user_id" likes "$track_id"
   exit 0
 }
 
@@ -105,7 +105,7 @@ function handleadd_like() {
 function handleadd_likeslist() {
   user_id="$1"
   # prints playlist creation confirmation
-  ./s2mongo add playlist "$user_id" "likes"
+  ./../S2_Mongo/S2_Mongo add playlist "$user_id" "likes"
   exit 0
 }
 
@@ -189,7 +189,7 @@ function handlerm_playlist() {
   fi
   user_id="$3"
   playlist_id="$4"
-  ./s2mongo "rm" playlist "$user_id" "$playlist_id"
+  ./../S2_Mongo/S2_Mongo "rm" playlist "$user_id" "$playlist_id"
   exit 0
 }
 
@@ -225,7 +225,7 @@ function handlerm_like() {
   fi
   user_id="$3"
   track_id="$4"
-  ./s2mongo "rm" track "$user_id" likes "$track_id"
+  ./../S2_Mongo/S2_Mongo "rm" track "$user_id" likes "$track_id"
   exit 0
 }
 
@@ -272,7 +272,7 @@ function handleplaylist_list() {
     exit 1
   fi
   user_id="$3"
-  ./s2mongo list playlist "$user_id"
+  ./../S2_Mongo/S2_Mongo list playlist "$user_id"
   exit 0
 }
 
@@ -300,7 +300,7 @@ function handlelike_list() {
     exit 1
   fi
   user_id="$3"
-  ./s2mongo list track "$user_id" likes
+  ./../S2_Mongo/S2_Mongo list track "$user_id" likes
   exit 0
 }
 
@@ -388,12 +388,12 @@ function handleget() {
   # user, artist, album, track, genre, playlist
   for sub in "${accepted_subcommands[@]}"; do
     case "$2" in
-      "user") ./s2postgre.sh get user "$3" ;;
-      "artist") ./s2postgre.sh get artist "$3" ;;
-      "album") ./s2postgre.sh get album "$3" ;;
-      "track") ./s2postgre.sh get track "$3" ;;
-      "genre") ./s2postgre.sh get genre "$3" ;;
-      "playlist") ./s2mongo get playlist "$3" "$4" ;;
+      "user") ./s2postgre.sh get user "$3" ; exit 0;;
+      "artist") ./s2postgre.sh get artist "$3"; exit 0 ;;
+      "album") ./s2postgre.sh get album "$3"; exit 0 ;;
+      "track") ./s2postgre.sh get track "$3"; exit 0 ;;
+      "genre") ./s2postgre.sh get genre "$3"; exit 0 ;;
+      "playlist") ./../S2_Mongo/S2_Mongo get playlist "$3" "$4"; exit 0 ;;
     esac
   done
   exit 0
