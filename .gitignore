@@ -34,3 +34,7 @@ data/scylla/
 # S1
 S1/s1
 S1/a.out
+
+# S2
+S2_Mongo/s2mongo
+S2_Postgre/Main.class
