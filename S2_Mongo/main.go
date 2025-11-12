@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,7 +41,7 @@ func CreateTrack(id int, duration int, name string, genre string, album string) 
 	}
 }
 
-func AddPlaylist(db *mongo.Database, playlistName string, creator string, public bool) error {
+func AddPlaylist(db *mongo.Database, playlistName string, creator string, public string) error {
 	collection := db.Collection("Playlists")
 
 	filter := bson.M{"name": playlistName}
@@ -52,13 +54,18 @@ func AddPlaylist(db *mongo.Database, playlistName string, creator string, public
 		return err
 	}
 
+	publicBool := false
+	if public == "true" {
+		publicBool = true
+	}
+
 	playlist := Playlist{
 		PlaylistID: primitive.NewObjectID(),
 		Name:       playlistName,
 		Creator:    creator,
 		Tracks:     []Track{},
 		CreatedAt:  time.Now(),
-		Public:     public,
+		Public:     publicBool,
 	}
 
 	_, err2 := collection.InsertOne(context.TODO(), playlist)
@@ -90,7 +97,14 @@ func add_track_to_playlist(db *mongo.Database, playlistName string, id int, dura
 	return nil
 }
 
+//func listPlaylist(db * mongo.Database,playlistName string){}
+
 func main() {
+	args := os.Args[1:]
+	s1 := args[0]
+	s2 := args[1]
+	func_call := s1 + s2
+
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatal(err)
@@ -122,6 +136,21 @@ func main() {
 		if err != nil {
 			log.Fatalf("Falha ao criar coleção")
 		}
+	}
+
+	switch func_call {
+	case "addplaylist":
+		AddPlaylist(database, args[2], args[3], args[4])
+	case "addtrack":
+		num_args3, err := strconv.Atoi(args[3])
+		if err != nil {
+			log.Fatal("erro ao converter string")
+		}
+		num_args4, err2 := strconv.Atoi(args[4])
+		if err2 != nil {
+			log.Fatal("erro ao converter string")
+		}
+		add_track_to_playlist(database, args[2], num_args3, num_args4, args[5], args[6], args[7])
 	}
 
 }
