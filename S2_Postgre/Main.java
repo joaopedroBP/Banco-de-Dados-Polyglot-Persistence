@@ -404,6 +404,51 @@ public class Main{
     }
   }
 
+
+  public static void getTrack(Connection con, String trackId) {
+    if (!checkTrack(con, trackId)) {
+      System.out.println("Track com ID " + trackId + " não encontrada!");
+      return;
+    }
+
+    String sql = """
+      SELECT 
+        t.track_id,
+        t.titulo AS track_name,
+        t.duracao_segundos,
+        a.titulo AS album_name,
+        g.genre_name AS genre_name
+      FROM tracks t
+      JOIN albums a ON t.album_id = a.album_id
+      LEFT JOIN genres g ON a.genre_id = g.genre_id
+      WHERE t.track_id = ?;
+      """;
+
+    try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+      pstmt.setInt(1, Integer.parseInt(trackId));
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          int id = rs.getInt("track_id");
+          String nome = rs.getString("track_name");
+          String album = rs.getString("album_name");
+          String genero = rs.getString("genre_name");
+          int duracao = rs.getInt("duracao_segundos");
+
+          System.out.println(
+            "ID: " + id +
+            "  Nome: " + nome +
+            "  Álbum: " + album +
+            "  Gênero: " + genero +
+            "  Duração: " + duracao + "s"
+          );
+        }
+      }
+    } catch (SQLException e) {
+      System.out.println("Erro ao obter informações da track!");
+      e.printStackTrace();
+    }
+  }
+
   public static void main(String[] args){
     String url = "jdbc:postgresql://localhost:5432/postgres";
     String usuario = "postgres";
@@ -502,7 +547,7 @@ public class Main{
           case  "rmartist":
             removeArtist(con,args[2]);
             break;
-	  case  "rmgenre":
+	        case  "rmgenre":
             removeGenre(con,args[2]);
             break;
           case  "rmtrack":
@@ -526,6 +571,8 @@ public class Main{
           case "albumcheck":
             check = checkAlbum(con,args[2]);
             break;
+          case "gettrack":
+            check = getTrack(con,args[2]);
         }
       }
     }catch (Exception e){
