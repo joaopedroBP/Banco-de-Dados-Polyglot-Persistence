@@ -469,46 +469,46 @@ public class Main{
         boolean check;
 
         switch (function_called){
-          case "useradd":
+          case "adduser":
             createUser(con,args[2],args[3],args[4]);
             break;
-          case "artistadd":
+          case "addartist":
             createArtist(con,args[2],args[3]);
             break;
-          case "genreadd":
+          case "addgenre":
             createGenre(con,args[2]);
             break;
-          case "albumadd":
+          case "addalbum":
             createAlbum(con,args[2],args[3],args[4],args[5]);
             break;
-          case "trackadd":
+          case "addtrack":
             createTrack(con,args[2],args[3],args[4],args[5]);
             break;
-          case "userlist":
+          case "listuser":
             listUsers(con);
             break;
-          case "artistlist":
+          case "listartist":
             listArtists(con);
             break;
-          case "genrelist":
+          case "listgenre":
             listGenres(con);
             break;
-          case "albumlist":
+          case "listalbum":
             listAlbumsAndTracks(con);
             break;
-          case  "userrmv":
+          case  "rmuser":
             removeUser(con,args[2]);
             break;
-          case  "artistrmv":
+          case  "rmartist":
             removeArtist(con,args[2]);
             break;
-          case  "genrermv":
+	  case  "rmgenre":
             removeGenre(con,args[2]);
             break;
-          case  "trackrmv":
+          case  "rmtrack":
             removeTrack(con,args[2]);
             break;
-          case  "albumrmv":
+          case  "rmalbum":
             removeAlbum(con,args[2]);
             break;
           case "usercheck":
