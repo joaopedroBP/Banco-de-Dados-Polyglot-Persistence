@@ -466,6 +466,8 @@ public class Main{
           stmt.execute(createTracksTable);
         }
 
+        boolean check;
+
         switch (function_called){
           case "useradd":
             createUser(con,args[2],args[3],args[4]);
@@ -510,19 +512,19 @@ public class Main{
             removeAlbum(con,args[2]);
             break;
           case "usercheck":
-            boolean check = checkUser(con,args[2]);
+            check = checkUser(con,args[2]);
             break;
           case "artistcheck":
-            boolean check = checkArtist(con,args[2]);
+            check = checkArtist(con,args[2]);
             break;
           case "genrecheck":
-            boolean check = checkGenre(con,args[2]);
+            check = checkGenre(con,args[2]);
             break;
           case "trackcheck":
-            boolean check = checkTrack(con,args[2]);
+            check = checkTrack(con,args[2]);
             break;
           case "albumcheck":
-            boolean check = checkAlbum(con,args[2]);
+            check = checkAlbum(con,args[2]);
             break;
         }
       }
