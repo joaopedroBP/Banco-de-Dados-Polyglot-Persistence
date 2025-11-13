@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/gocql/gocql"
 )
+
+type TrackTime struct {
+	TrackName string
+	Duration  int
+}
 
 func addToHistory(session *gocql.Session, userId string, trackId int, trackName string, trackGenre string) error {
 	return session.Query(`
@@ -25,12 +31,66 @@ func addListeningTime(session *gocql.Session, userId string, trackName string, l
 	`, listeningTime, userId, trackName).Exec()
 }
 
-func main() {
-	args := os.Args[1:]
-	if len(args) < 2 {
-		log.Fatal("Uso: go run main.go <func1> <func2> [args...]")
+func topNTracks(session *gocql.Session, userId string, n int) error {
+	iter := session.Query(`
+		SELECT trackname, duration FROM listening_time
+		WHERE user_id = ?
+	`, userId).Iter()
+
+	var trackName string
+	var duration int
+	tracks := []TrackTime{}
+
+	for iter.Scan(&trackName, &duration) {
+		tracks = append(tracks, TrackTime{TrackName: trackName, Duration: duration})
 	}
 
+	if err := iter.Close(); err != nil {
+		return fmt.Errorf("Erro ao ler listening_time: %v", err)
+	}
+
+	sort.Slice(tracks, func(i, j int) bool {
+		return tracks[i].Duration > tracks[j].Duration
+	})
+
+	if n > len(tracks) {
+		n = len(tracks)
+	}
+
+	fmt.Printf("Top %d músicas mais ouvidas do usuário %s:\n", n, userId)
+	for i := 0; i < n; i++ {
+		fmt.Printf("%d. %s - %d segundos\n", i+1, tracks[i].TrackName, tracks[i].Duration)
+	}
+
+	return nil
+}
+
+func recentNTracks(session *gocql.Session, userId string, n int) error {
+	var trackName string
+	var ts time.Time
+
+	iter := session.Query(`
+		SELECT trackname, ts FROM listening_history
+		WHERE user_id = ?
+		LIMIT ?
+	`, userId, n).Iter()
+
+	fmt.Printf("Últimas %d músicas do usuário %s:\n", n, userId)
+	count := 1
+	for iter.Scan(&trackName, &ts) {
+		fmt.Printf("%d. %s - %s\n", count, trackName, ts.Format("2006-01-02 15:04:05"))
+		count++
+	}
+
+	if err := iter.Close(); err != nil {
+		return fmt.Errorf("Erro ao ler listening_history: %v", err)
+	}
+
+	return nil
+}
+
+func main() {
+	args := os.Args[1:]
 	func_call := args[0] + args[1]
 
 	cluster := gocql.NewCluster("127.0.0.1")
@@ -70,9 +130,6 @@ func main() {
 
 	switch func_call {
 	case "addhistory":
-		if len(args) < 5 {
-			log.Fatal("Uso: add history <userId> <trackId> <trackName> <trackGenre>")
-		}
 		trackId, err := strconv.Atoi(args[2])
 		if err != nil {
 			log.Fatal("trackId precisa ser um número")
@@ -83,9 +140,6 @@ func main() {
 		fmt.Println("Música adicionada ao histórico!")
 
 	case "addtime":
-		if len(args) < 4 {
-			log.Fatal("Uso: add time <userId> <trackName> <listeningTime>")
-		}
 		listeningTime, err := strconv.Atoi(args[3])
 		if err != nil {
 			log.Fatal("listeningTime precisa ser um número")
@@ -94,8 +148,21 @@ func main() {
 			log.Fatalf("Erro ao atualizar listening_time: %v", err)
 		}
 		fmt.Println("Tempo de reprodução atualizado com sucesso!")
-
-	default:
-		log.Fatal("Função desconhecida. Use 'add history' ou 'add time'")
+	case "toptracks":
+		n, err := strconv.Atoi(args[2])
+		if err != nil {
+			log.Fatal("O parâmetro n precisa ser um número")
+		}
+		if err := topNTracks(session, args[1], n); err != nil {
+			log.Fatalf("Erro ao buscar musicas mais ouvidas: %v", err)
+		}
+	case "recenttracks":
+		n, err := strconv.Atoi(args[2])
+		if err != nil {
+			log.Fatal("O parâmetro n precisa ser um número")
+		}
+		if err := topNTracks(session, args[1], n); err != nil {
+			log.Fatalf("Erro ao buscar musicas recentes: %v", err)
+		}
 	}
 }
