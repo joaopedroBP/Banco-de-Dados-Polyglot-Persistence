@@ -85,7 +85,7 @@ function handleadd_history() {
   track_id="$4"
   played_at="$5"
   # prints confirmation
-  ./s2scylla add "history" "$user_id" "$track_id" "$played_at"
+  ./../S2_Scylla/S2_Scylla add "history" "$user_id" "$track_id" "$played_at"
   exit 0
 }
 
@@ -97,6 +97,16 @@ function handleadd_like() {
   fi
   user_id="$3"
   track_id="$4"
+  # check user
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
+  # check track
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
   # prints confirmation
   ./../S2_Mongo/S2_Mongo add track "$user_id" likes "$track_id"
   exit 0
@@ -105,6 +115,11 @@ function handleadd_like() {
 # create likes playlist for new user
 function handleadd_likeslist() {
   user_id="$1"
+  # check user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   # prints playlist creation confirmation
   ./../S2_Mongo/S2_Mongo add playlist "$user_id" "likes" "false"
   exit 0
@@ -117,10 +132,20 @@ function handleadd_playtime() {
     exit 1
   fi
   user_id="$3"
+  # check user
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   track_id="$4"
+  # check track
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
   playtime_seconds="$5"
   # prints confirmation
-  ./s2scylla add "playtime" "$user_id" "$track_id" "$playtime_seconds"
+  ./../S2_Scylla/S2_Scylla add "playtime" "$user_id" "$track_id" "$playtime_seconds"
   exit 0
 }
 
@@ -134,6 +159,11 @@ function handleadd_user() {
   email="$4"
   password="$5"
   ./s2postgre.sh add user "$3" "$4" "$5"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $username")" ]]; then
+    echo "Failed to add user."
+    exit 1
+  fi
   handleadd_likeslist "$username"
   exit 0
 }
@@ -190,6 +220,11 @@ function handlerm_playlist() {
   fi
   user_id="$3"
   playlist_id="$4"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   ./../S2_Mongo/S2_Mongo "rm" playlist "$user_id" "$playlist_id"
   exit 0
 }
@@ -212,9 +247,19 @@ function handlerm_history() {
     exit 1
   fi
   user_id="$3"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   track_id="$4"
+  # check if track exists
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
   played_at="$5"
-  ./s2scylla "rm" "history" "$user_id" "$track_id" "$played_at"
+  ./../S2_Scylla/S2_Scylla "rm" "history" "$user_id" "$track_id" "$played_at"
   exit 0
 }
 
@@ -226,6 +271,16 @@ function handlerm_like() {
   fi
   user_id="$3"
   track_id="$4"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
+  # check if track exists
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
   ./../S2_Mongo/S2_Mongo "rm" track "$user_id" likes "$track_id"
   exit 0
 }
@@ -237,8 +292,18 @@ function handlerm_playtime() {
     exit 1
   fi
   user_id="$3"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   track_id="$4"
-  ./s2scylla "rm" "playtime" "$user_id" "$track_id"
+  # check if track exists
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
+  ./../S2_Scylla/S2_Scylla "rm" "playtime" "$user_id" "$track_id"
   exit 0
 }
 
@@ -268,11 +333,16 @@ function handletrack_list() {
 
 # list playlists for a user
 function handleplaylist_list() {
-  if [[ -z "$4" ]]; then
+  if [[ -z "$3" ]]; then
     echo "Usage: $0 list playlist <user_id>"
     exit 1
   fi
   user_id="$3"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   ./../S2_Mongo/S2_Mongo list playlist "$user_id"
   exit 0
 }
@@ -290,7 +360,12 @@ function handlehistory_list() {
     exit 1
   fi
   user_id="$3"
-  ./s2scylla list "history" "$user_id"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
+  ./../S2_Scylla/S2_Scylla list "history" "$user_id"
   exit 0
 }
 
@@ -301,6 +376,11 @@ function handlelike_list() {
     exit 1
   fi
   user_id="$3"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   ./../S2_Mongo/S2_Mongo list track "$user_id" likes
   exit 0
 }
@@ -312,7 +392,12 @@ function handleplaytime_list() {
     exit 1
   fi
   user_id="$3"
-  ./s2scylla list "playtime" "$user_id"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
+  ./../S2_Scylla/S2_Scylla list "playtime" "$user_id"
   exit 0
 }
 
@@ -323,8 +408,13 @@ function handlemostp_list() {
     exit 1
   fi
   user_id="$3"
+  # check if user exists
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User $user_id does not exist."
+    exit 1
+  fi
   top_num="$4"
-  ./s2scylla list "mostp" "$user_id" "$top_num"
+  ./../S2_Scylla/S2_Scylla list "mostp" "$user_id" "$top_num"
   exit 0
 }
 

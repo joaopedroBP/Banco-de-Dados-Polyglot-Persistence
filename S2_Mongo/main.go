@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -15,11 +16,7 @@ import (
 )
 
 type Track struct {
-	TrackID       int    `bson:"track_id"`
-	TrackDuration int    `bson:"track_duration"`
-	TrackName     string `bson:"track_name"`
-	TrackGenre    string `bson:"track_genre"`
-	TrackAlbum    string `bson:"track_album_name"`
+	TrackID int `bson:"track_id"`
 }
 
 type Playlist struct {
@@ -31,19 +28,9 @@ type Playlist struct {
 	Public     bool               `bson:"public"`
 }
 
-func CreateTrack(id int, duration int, name string, genre string, album string) Track {
-	return Track{
-		TrackID:       id,
-		TrackDuration: duration,
-		TrackName:     name,
-		TrackGenre:    genre,
-		TrackAlbum:    album,
-	}
-}
-
-func AddPlaylist(db *mongo.Database, playlistName string, creator string, public string) error {
+func AddPlaylist(db *mongo.Database, creator string, playlistName string, public string) error {
 	collection := db.Collection("Playlists")
-	filter := bson.M{"name": playlistName}
+	filter := bson.M{"name": playlistName, "creator": creator}
 	var existing Playlist
 
 	singleResult := collection.FindOne(context.TODO(), filter)
@@ -51,7 +38,7 @@ func AddPlaylist(db *mongo.Database, playlistName string, creator string, public
 	err := singleResult.Decode(&existing)
 
 	if err == nil {
-		return fmt.Errorf("já existe uma playlist com o nome '%s'", playlistName)
+		return fmt.Errorf("já existe uma playlist com o nome '%s' para o criador '%s'", playlistName, creator)
 	} else if err != mongo.ErrNoDocuments {
 		return fmt.Errorf("erro ao buscar playlist: %w", err)
 	}
@@ -79,12 +66,11 @@ func AddPlaylist(db *mongo.Database, playlistName string, creator string, public
 	return nil
 }
 
-func add_track_to_playlist(db *mongo.Database, playlistName string, id int, duration int, name string, genre string, album string) error {
+func add_track_to_playlist(db *mongo.Database, creator string, playlistName string, id int) error {
 	collection := db.Collection("Playlists")
 
-	newTrack := CreateTrack(id, duration, name, genre, album)
-	filter := bson.M{"name": playlistName}
-	update := bson.M{"$push": bson.M{"tracks": newTrack}}
+	filter := bson.M{"name": playlistName, "creator": creator}
+	update := bson.M{"$push": bson.M{"tracks": Track{TrackID: id}}}
 
 	result, err := collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
@@ -92,21 +78,21 @@ func add_track_to_playlist(db *mongo.Database, playlistName string, id int, dura
 	}
 
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("nenhuma playlist encontrada com o nome %s", playlistName)
+		return fmt.Errorf("nenhuma playlist encontrada com o nome '%s' para o criador '%s'", playlistName, creator)
 	}
 
-	log.Printf("Faixa '%s' adicionada à playlist '%s' com sucesso!\n", name, playlistName)
+	log.Printf("Faixa '%d' adicionada à playlist '%s' com sucesso!\n", id, playlistName)
 	return nil
 }
 
-func listPlaylist(db *mongo.Database, playlistName string) error {
+func listPlaylist(db *mongo.Database, creator string, playlistName string) error {
 	collection := db.Collection("Playlists")
 	var playlist Playlist
-	filter := bson.M{"name": playlistName}
+	filter := bson.M{"name": playlistName, "creator": creator}
 	err := collection.FindOne(context.TODO(), filter).Decode(&playlist)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return fmt.Errorf("nenhuma playlist com o nome %s encontrada", playlistName)
+			return fmt.Errorf("nenhuma playlist com o nome '%s' e criador '%s' encontrada", playlistName, creator)
 		}
 		return err
 	}
@@ -121,20 +107,16 @@ func listPlaylist(db *mongo.Database, playlistName string) error {
 		fmt.Printf(" Nenhuma faixa na playlist")
 	} else {
 		for i, track := range playlist.Tracks {
-			fmt.Printf("  %d) %s\n", i+1, track.TrackName)
-			fmt.Printf("     ID: %d\n", track.TrackID)
-			fmt.Printf("     Duração: %d segundos\n", track.TrackDuration)
-			fmt.Printf("     Gênero: %s\n", track.TrackGenre)
-			fmt.Printf("     Álbum: %s\n", track.TrackAlbum)
+			fmt.Printf("  %d) %s\n", i+1, track.TrackID)
 		}
 	}
 	return nil
 }
 
-func remove_track(db *mongo.Database, playlistName string, trackID int) error {
+func remove_track(db *mongo.Database, creator string, playlistName string, trackID int) error {
 	collection := db.Collection("Playlists")
 
-	filter := bson.M{"name": playlistName}
+	filter := bson.M{"name": playlistName, "creator": creator}
 	update := bson.M{"$pull": bson.M{"tracks": bson.M{"track_id": trackID}}}
 
 	result, err := collection.UpdateOne(context.TODO(), filter, update)
@@ -154,10 +136,10 @@ func remove_track(db *mongo.Database, playlistName string, trackID int) error {
 	return nil
 }
 
-func remove_playlist(db *mongo.Database, playlistName string) error {
+func remove_playlist(db *mongo.Database, creator string, playlistName string) error {
 	colection := db.Collection("Playlists")
 
-	result, err := colection.DeleteOne(context.TODO(), bson.M{"name": playlistName})
+	result, err := colection.DeleteOne(context.TODO(), bson.M{"name": playlistName, "creator": creator})
 	if err != nil {
 		return fmt.Errorf("erro ao remover playlist: %v", err)
 	}
@@ -228,11 +210,8 @@ func main() {
 	}
 
 	exists := false
-	for _, c := range collections {
-		if c == colectionName {
-			exists = true
-			break
-		}
+	if slices.Contains(collections, colectionName) {
+		exists = true
 	}
 
 	if !exists {
@@ -250,23 +229,20 @@ func main() {
 		}
 
 	case "addtrack":
-		num_args3, err := strconv.Atoi(args[3])
+		// add track usuário playlist trackID
+		num_args4, err := strconv.Atoi(args[4])
 		if err != nil {
-			log.Fatalf("Erro ao converter TrackID '%s': %v", args[3], err)
+			log.Fatalf("Erro ao converter TrackID '%s': %v", args[4], err)
 		}
 
-		num_args4, err2 := strconv.Atoi(args[4])
-		if err2 != nil {
-			log.Fatalf("Erro ao converter TrackDuration '%s': %v", args[4], err2)
-		}
-
-		err = add_track_to_playlist(database, args[2], num_args3, num_args4, args[5], args[6], args[7])
+		err = add_track_to_playlist(database, args[2], args[3], num_args4)
 		if err != nil {
 			log.Fatalf("Falha ao adicionar track: %v", err)
 		}
-
 	case "listplaylist":
-		err := listPlaylist(database, args[2])
+		// list playlist usuário playlist
+		err := listUserPlaylists(database, args[2])
+
 		if err != nil {
 			log.Fatalf("Falha ao listar playlist: %v", err)
 		}
@@ -276,19 +252,20 @@ func main() {
 			log.Fatalf("Falha ao listar playlists do usuário: %v", err)
 		}
 
-	case "rmvtrack":
+	case "rmtrack":
+		// rm track usuário playlist trackID
 		num_args3, err := strconv.Atoi(args[3])
 		if err != nil {
 			log.Fatalf("Erro ao converter TrackID '%s': %v", args[3], err)
 		}
 
-		err = remove_track(database, args[2], num_args3)
+		err = remove_track(database, args[2], args[3], num_args3)
 		if err != nil {
 			log.Fatalf("Falha ao remover track: %v", err)
 		}
 
-	case "rmvplaylist":
-		err := remove_playlist(database, args[2])
+	case "rmplaylist":
+		err := remove_playlist(database, args[2], args[3])
 		if err != nil {
 			log.Fatalf("Falha ao remover playlist: %v", err)
 		}
