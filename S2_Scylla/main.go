@@ -12,37 +12,37 @@ import (
 )
 
 type TrackTime struct {
-	TrackName string
-	Duration  int
+	TrackID  int
+	Duration int
 }
 
-func addToHistory(session *gocql.Session, userId string, trackId int, trackName string, trackGenre string) error {
+func addToHistory(session *gocql.Session, userId string, trackId int) error {
 	return session.Query(`
-		INSERT INTO listening_history (user_id, ts, trackid, trackname, trackgenre)
-		VALUES (?, ?, ?, ?, ?)
-	`, userId, time.Now(), trackId, trackName, trackGenre).Exec()
+		INSERT INTO listening_history (user_id, ts, trackid)
+		VALUES (?, ?, ?)
+	`, userId, time.Now(), trackId).Exec()
 }
 
-func addListeningTime(session *gocql.Session, userId string, trackName string, listeningTime int) error {
+func addListeningTime(session *gocql.Session, userId string, trackID int, listeningTime int) error {
 	return session.Query(`
 		UPDATE listening_time
 		SET duration = duration + ?
-		WHERE user_id = ? AND trackname = ?
-	`, listeningTime, userId, trackName).Exec()
+		WHERE user_id = ? AND trackid = ?
+	`, listeningTime, userId, trackID).Exec()
 }
 
 func topNTracks(session *gocql.Session, userId string, n int) error {
 	iter := session.Query(`
-		SELECT trackname, duration FROM listening_time
+		SELECT trackid, duration FROM listening_time
 		WHERE user_id = ?
 	`, userId).Iter()
 
-	var trackName string
+	var trackID int
 	var duration int
 	tracks := []TrackTime{}
 
-	for iter.Scan(&trackName, &duration) {
-		tracks = append(tracks, TrackTime{TrackName: trackName, Duration: duration})
+	for iter.Scan(&trackID, &duration) {
+		tracks = append(tracks, TrackTime{TrackID: trackID, Duration: duration})
 	}
 
 	if err := iter.Close(); err != nil {
@@ -59,26 +59,26 @@ func topNTracks(session *gocql.Session, userId string, n int) error {
 
 	fmt.Printf("Top %d músicas mais ouvidas do usuário %s:\n", n, userId)
 	for i := 0; i < n; i++ {
-		fmt.Printf("%d. %s - %d segundos\n", i+1, tracks[i].TrackName, tracks[i].Duration)
+		fmt.Printf("%d. %d - %d segundos\n", i+1, tracks[i].TrackID, tracks[i].Duration)
 	}
 
 	return nil
 }
 
 func recentNTracks(session *gocql.Session, userId string, n int) error {
-	var trackName string
+	var trackID int
 	var ts time.Time
 
 	iter := session.Query(`
-		SELECT trackname, ts FROM listening_history
+		SELECT trackid,ts FROM listening_history
 		WHERE user_id = ?
 		LIMIT ?
 	`, userId, n).Iter()
 
 	fmt.Printf("Últimas %d músicas do usuário %s:\n", n, userId)
 	count := 1
-	for iter.Scan(&trackName, &ts) {
-		fmt.Printf("%d. %s - %s\n", count, trackName, ts.Format("2006-01-02 15:04:05"))
+	for iter.Scan(&trackID, &ts) {
+		fmt.Printf("%d. TrackID: %d | Data: %s\n", count, ts.Format("2006-01-02 15:04:05"))
 		count++
 	}
 
@@ -109,8 +109,6 @@ func main() {
 			user_id text,
 			ts timestamp,
 			trackid int,
-			trackname text,
-			trackgenre text,
 			PRIMARY KEY (user_id, ts)
 		) WITH CLUSTERING ORDER BY (ts DESC)
 	`).Exec(); err != nil {
@@ -120,7 +118,7 @@ func main() {
 	if err := session.Query(`
 		CREATE TABLE IF NOT EXISTS listening_time (
 			user_id text,
-			trackname text,
+			trackid int,
 			duration int,
 			PRIMARY KEY (user_id, trackname)
 		)
@@ -134,7 +132,7 @@ func main() {
 		if err != nil {
 			log.Fatal("trackId precisa ser um número")
 		}
-		if err := addToHistory(session, args[1], trackId, args[3], args[4]); err != nil {
+		if err := addToHistory(session, args[1], trackId); err != nil {
 			log.Fatalf("Erro ao adicionar histórico: %v", err)
 		}
 		fmt.Println("Música adicionada ao histórico!")
@@ -144,7 +142,13 @@ func main() {
 		if err != nil {
 			log.Fatal("listeningTime precisa ser um número")
 		}
-		if err := addListeningTime(session, args[1], args[2], listeningTime); err != nil {
+
+		trackId, err := strconv.Atoi(args[2])
+		if err != nil {
+			log.Fatal("trackId precisa ser um número")
+		}
+
+		if err := addListeningTime(session, args[1], trackId, listeningTime); err != nil {
 			log.Fatalf("Erro ao atualizar listening_time: %v", err)
 		}
 		fmt.Println("Tempo de reprodução atualizado com sucesso!")
@@ -161,7 +165,7 @@ func main() {
 		if err != nil {
 			log.Fatal("O parâmetro n precisa ser um número")
 		}
-		if err := topNTracks(session, args[1], n); err != nil {
+		if err := recentNTracks(session, args[1], n); err != nil {
 			log.Fatalf("Erro ao buscar musicas recentes: %v", err)
 		}
 	}
