@@ -99,14 +99,43 @@ func add_track_to_playlist(db *mongo.Database, playlistName string, id int, dura
 	return nil
 }
 
-//func listPlaylist(db * mongo.Database,playlistName string){}
+func listPlaylist(db *mongo.Database, playlistName string) error {
+	collection := db.Collection("Playlists")
+	var playlist Playlist
+	filter := bson.M{"name": playlistName}
+	err := collection.FindOne(context.TODO(), filter).Decode(&playlist)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("nenhuma playlist com o nome %s encontrada", playlistName)
+		}
+		return err
+	}
+
+	fmt.Printf("Playlist: %s\n", playlist.Name)
+	fmt.Printf("Criador: %s\n", playlist.Creator)
+	fmt.Printf("Publica: %t\n", playlist.Public)
+	fmt.Printf("Criada em: %s\n", playlist.CreatedAt.Format("02/01/2006 15:04:05"))
+	fmt.Println("Tracks:")
+
+	if len(playlist.Tracks) == 0 {
+		fmt.Printf(" Nenhuma faixa na playlist")
+	} else {
+		for i, track := range playlist.Tracks {
+			fmt.Printf("  %d) %s\n", i+1, track.TrackName)
+			fmt.Printf("     ID: %d\n", track.TrackID)
+			fmt.Printf("     Duração: %d segundos\n", track.TrackDuration)
+			fmt.Printf("     Gênero: %s\n", track.TrackGenre)
+			fmt.Printf("     Álbum: %s\n", track.TrackAlbum)
+		}
+	}
+	return nil
+}
 
 func main() {
 	args := os.Args[1:]
 	s1 := args[0]
 	s2 := args[1]
 	func_call := s1 + s2
-	log.Printf("\n%s\n", func_call)
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatal(err)
@@ -116,17 +145,14 @@ func main() {
 	if err != nil {
 		log.Fatal("falha ao conctar")
 	}
-	fmt.Println("conectado")
 
 	database := client.Database("bancosproj")
 	colectionName := "Playlists"
 
-	log.Println("Antes de listar coleções")
 	collections, err := database.ListCollectionNames(context.TODO(), bson.D{})
 	if err != nil {
 		log.Fatalf("Erro listando coleções: %v", err)
 	}
-	log.Println("Coleções listadas com sucesso:", collections)
 
 	exists := false
 	for _, c := range collections {
@@ -159,6 +185,8 @@ func main() {
 			log.Fatal("erro ao converter string")
 		}
 		add_track_to_playlist(database, args[2], num_args3, num_args4, args[5], args[6], args[7])
+	case "listplaylist":
+		listPlaylist(database, args[2])
 	}
 
 }
