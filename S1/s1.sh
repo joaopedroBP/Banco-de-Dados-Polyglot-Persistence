@@ -124,7 +124,8 @@ function handleadd_likeslist() {
   # check user exists
   if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
     echo "User $user_id does not exist."
-    exit 1
+    exit 1                                                                NAMES
+5d4f1ad0c770   scylladb/scylla:5.2                           "/docker-entrypoint.…"   13 hours ago   Up 2 hours   22/tcp, 7000-7001/tcp, 9160/tcp, 918
   fi
   # prints playlist creation confirmation
   ./../S2_Mongo/S2_Mongo add playlist "$user_id" "likes" "false"
@@ -151,8 +152,8 @@ function handleadd_time() {
   fi
   time_seconds="$5"
   # prints confirmation
-  ./../S2_Scylla/S2_Scylla add "time" "$user_id" "$track_id" "$playtime_seconds"
-  hadleadd_history "$@"
+  ./../S2_Scylla/S2_Scylla add "time" "$user_id" "$track_id" "$time_seconds"
+  handleadd_history "$@"
   exit 0
 }
 
@@ -363,7 +364,7 @@ function handlegenre_list() {
 # list listening history for a user
 function handlehistory_list() {
   if [[ -z "$4" ]]; then
-    echo "Usage: $0 list history <user_id>"
+    echo "Usage: $0 list history <user_id> <num>"
     exit 1
   fi
   user_id="$3"
@@ -372,7 +373,8 @@ function handlehistory_list() {
     echo "User $user_id does not exist."
     exit 1
   fi
-  ./../S2_Scylla/S2_Scylla list "history" "$user_id"
+  num=$4
+  ./../S2_Scylla/S2_Scylla recent tracks "$user_id" $num
   exit 0
 }
 
@@ -396,7 +398,7 @@ function handlelike_list() {
 
 # list most played from user
 function handlemostp_list() {
-  if [[ -z "$5" ]]; then
+  if [[ -z "$4" ]]; then
     echo "Usage: $0 list mostp <user_id> <top_num>"
     exit 1
   fi
@@ -454,8 +456,6 @@ function handletime_list() {
   $recent_num="$4"
   ../S2_Scylla/S2_Scylla recent tracks "$user_id" "$recent_num"
 }
-
-function handletime_lisst 
 
 function handlelist() {
   for sub in "${accepted_subcommands[@]}"; do
