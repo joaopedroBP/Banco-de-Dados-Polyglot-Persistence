@@ -131,6 +131,46 @@ func listPlaylist(db *mongo.Database, playlistName string) error {
 	return nil
 }
 
+func remove_track(db *mongo.Database, playlistName string, trackID int) error {
+	collection := db.Collection("Playlists")
+
+	filter := bson.M{"name": playlistName}
+	update := bson.M{"$pull": bson.M{"tracks": bson.M{"track_id": trackID}}}
+
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return fmt.Errorf("erro ao remover track: %v", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("nenhuma playlist encontrada com o nome '%s'", playlistName)
+	}
+
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("nenhuma track com o id %d encontrada na playlist '%s'", trackID, playlistName)
+	}
+
+	log.Printf("Track com ID %d removida da playlist '%s' com sucesso!\n", trackID, playlistName)
+	return nil
+}
+
+func remove_playlist(db *mongo.Database, playlistName string) error {
+	colection := db.Collection("Playlists")
+
+	result, err := colection.DeleteOne(context.TODO(), bson.M{"name": playlistName})
+	if err != nil {
+		return fmt.Errorf("erro ao remover playlist: %v", err)
+	}
+
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("nenhuma playlist encontrada com o nome '%s'", playlistName)
+	}
+
+	log.Printf("Playlist '%s' removida com sucesso!\n", playlistName)
+
+	return nil
+}
+
 func main() {
 	args := os.Args[1:]
 	s1 := args[0]
@@ -173,20 +213,47 @@ func main() {
 	case "addplaylist":
 		err := AddPlaylist(database, args[2], args[3], args[4])
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Falha ao adicionar playlist: %v", err)
 		}
+
 	case "addtrack":
 		num_args3, err := strconv.Atoi(args[3])
 		if err != nil {
-			log.Fatal("erro ao converter string")
+			log.Fatalf("Erro ao converter TrackID '%s': %v", args[3], err)
 		}
+
 		num_args4, err2 := strconv.Atoi(args[4])
 		if err2 != nil {
-			log.Fatal("erro ao converter string")
+			log.Fatalf("Erro ao converter TrackDuration '%s': %v", args[4], err2)
 		}
-		add_track_to_playlist(database, args[2], num_args3, num_args4, args[5], args[6], args[7])
+
+		err = add_track_to_playlist(database, args[2], num_args3, num_args4, args[5], args[6], args[7])
+		if err != nil {
+			log.Fatalf("Falha ao adicionar track: %v", err)
+		}
+
 	case "listplaylist":
-		listPlaylist(database, args[2])
+		err := listPlaylist(database, args[2])
+		if err != nil {
+			log.Fatalf("Falha ao listar playlist: %v", err)
+		}
+
+	case "rmvtrack":
+		num_args3, err := strconv.Atoi(args[3])
+		if err != nil {
+			log.Fatalf("Erro ao converter TrackID '%s': %v", args[3], err)
+		}
+
+		err = remove_track(database, args[2], num_args3)
+		if err != nil {
+			log.Fatalf("Falha ao remover track: %v", err)
+		}
+
+	case "rmvplaylist":
+		err := remove_playlist(database, args[2])
+		if err != nil {
+			log.Fatalf("Falha ao remover playlist: %v", err)
+		}
 	}
 
 }
