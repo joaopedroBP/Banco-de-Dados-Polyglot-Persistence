@@ -120,7 +120,7 @@ func main() {
 			user_id text,
 			trackid int,
 			duration int,
-			PRIMARY KEY (user_id, trackname)
+			PRIMARY KEY (user_id, trackid)
 		)
 	`).Exec(); err != nil {
 		log.Fatalf("Não foi possível criar a tabela listening_time: %v", err)
@@ -138,17 +138,17 @@ func main() {
 		fmt.Println("Música adicionada ao histórico!")
 
 	case "addtime":
-		listeningTime, err := strconv.Atoi(args[3])
+		listeningTime, err := strconv.Atoi(args[4])
 		if err != nil {
 			log.Fatal("listeningTime precisa ser um número")
 		}
 
-		trackId, err := strconv.Atoi(args[2])
+		trackId, err := strconv.Atoi(args[3])
 		if err != nil {
 			log.Fatal("trackId precisa ser um número")
 		}
 
-		if err := addListeningTime(session, args[1], trackId, listeningTime); err != nil {
+		if err := addListeningTime(session, args[2], trackId, listeningTime); err != nil {
 			log.Fatalf("Erro ao atualizar listening_time: %v", err)
 		}
 		fmt.Println("Tempo de reprodução atualizado com sucesso!")

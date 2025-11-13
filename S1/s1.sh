@@ -3,7 +3,7 @@
 set -e
 
 # mostp = most playem
-accepted_subcommands=("user" "artist" "album" "track" "playlist" "genre" "history" "like" "playtime" "mostp")
+accepted_subcommands=("user" "artist" "album" "track" "playlist" "genre" "history" "like" "mostp" "time")
 
 # add artist to DB
 function handleadd_artist() {
@@ -77,15 +77,21 @@ function handleadd_genre() {
 
 # add song to user's listening history
 function handleadd_history() {
-  if [[ -z "$5" ]]; then
-    echo "Usage: $0 add history <user_id> <track_id> <played_at>"
+  if [[ -z "$4" ]]; then
+    echo "Usage: $0 add history <user_id> <track_id>"
     exit 1
   fi
   user_id="$3"
+  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
+    echo "User not found"
+  fi
   track_id="$4"
-  played_at="$5"
+  if [[ -z "$(./s2postgre.sh get track "$track_id" | grep "ID: $track_id")" ]]; then
+    echo "Track $track_id does not exist."
+    exit 1
+  fi
   # prints confirmation
-  ./../S2_Scylla/S2_Scylla add "history" "$user_id" "$track_id" "$played_at"
+  ./../S2_Scylla/S2_Scylla add "history" "$user_id" "$track_id" 
   exit 0
 }
 
@@ -125,10 +131,10 @@ function handleadd_likeslist() {
   exit 0
 }
 
-# add playtime for a track for a user
-function handleadd_playtime() {
+# add time for a track for a user
+function handleadd_time() {
   if [[ -z "$5" ]]; then
-    echo "Usage: $0 add playtime <user_id> <track_id> <playtime_seconds>"
+    echo "Usage: $0 add time <user_id> <track_id> <time_seconds>"
     exit 1
   fi
   user_id="$3"
@@ -143,9 +149,10 @@ function handleadd_playtime() {
     echo "Track $track_id does not exist."
     exit 1
   fi
-  playtime_seconds="$5"
+  time_seconds="$5"
   # prints confirmation
-  ./../S2_Scylla/S2_Scylla add "playtime" "$user_id" "$track_id" "$playtime_seconds"
+  ./../S2_Scylla/S2_Scylla add "time" "$user_id" "$track_id" "$playtime_seconds"
+  hadleadd_history "$@"
   exit 0
 }
 
@@ -285,10 +292,10 @@ function handlerm_like() {
   exit 0
 }
 
-# remove playtime entry
-function handlerm_playtime() {
+# remove time entry
+function handlerm_time() {
   if [[ -z "$4" ]]; then
-    echo "Usage: $0 "rm" playtime <user_id> <track_id>"
+    echo "Usage: $0 "rm" time <user_id> <track_id>"
     exit 1
   fi
   user_id="$3"
@@ -303,7 +310,7 @@ function handlerm_playtime() {
     echo "Track $track_id does not exist."
     exit 1
   fi
-  ./../S2_Scylla/S2_Scylla "rm" "playtime" "$user_id" "$track_id"
+  ./../S2_Scylla/S2_Scylla "rm" "time" "$user_id" "$track_id"
   exit 0
 }
 
@@ -385,21 +392,7 @@ function handlelike_list() {
   exit 0
 }
 
-# list playtime for a user
-function handleplaytime_list() {
-  if [[ -z "$4" ]]; then
-    echo "Usage: $0 list playtime <user_id>"
-    exit 1
-  fi
-  user_id="$3"
-  # check if user exists
-  if [[ -z "$(./s2postgre.sh list user | grep "User: $user_id")" ]]; then
-    echo "User $user_id does not exist."
-    exit 1
-  fi
-  ./../S2_Scylla/S2_Scylla list "playtime" "$user_id"
-  exit 0
-}
+
 
 # list most played from user
 function handlemostp_list() {
@@ -414,7 +407,7 @@ function handlemostp_list() {
     exit 1
   fi
   top_num="$4"
-  ./../S2_Scylla/S2_Scylla list "mostp" "$user_id" "$top_num"
+  ./../S2_Scylla/S2_Scylla top tracks "$user_id" "$top_num"
   exit 0
 }
 
@@ -429,7 +422,7 @@ function handleadd() {
       "genre") handleadd_genre "$@" ;;
       "history") handleadd_history "$@" ;;
       "like") handleadd_like "$@" ;;
-      "playtime") handleadd_playtime "$@" ;;
+      "time") handleadd_time "$@" ;;
       # mostp is not added, it's queried
       *) echo "Unknown subcommand for add: $2"; exit 1 ;;
     esac
@@ -448,13 +441,21 @@ function handlerm() {
       "genre") handlerm_genre "$@" ;;
       "history") handlerm_history "$@" ;;
       "like") handlerm_like "$@" ;;
-      "playtime") handlerm_playtime "$@" ;;
+      "time") handlerm_time "$@" ;;
       # mostp is not removed, it's queried
       *) echo "Unknown subcommand for rm: $2"; exit 1 ;;
     esac
   done
   exit 0
 }
+
+function handletime_list() {
+  $userid="$3"
+  $recent_num="$4"
+  ../S2_Scylla/S2_Scylla recent tracks "$user_id" "$recent_num"
+}
+
+function handletime_lisst 
 
 function handlelist() {
   for sub in "${accepted_subcommands[@]}"; do
@@ -467,7 +468,7 @@ function handlelist() {
       "genre") handlegenre_list "$@" ;;
       "history") handlehistory_list "$@" ;;
       "like") handlelike_list "$@" ;;
-      "playtime") handleplaytime_list "$@" ;;
+      "time") handletime_list "$@" ;;
       "mostp") handlemostp_list "$@" ;;
       *) echo "Unknown subcommand for list: $2"; exit 1 ;;
     esac
