@@ -171,6 +171,39 @@ func remove_playlist(db *mongo.Database, playlistName string) error {
 	return nil
 }
 
+func listUserPlaylists(db *mongo.Database, userID string) error {
+	collection := db.Collection("Playlists")
+
+	filter := bson.M{"creator": userID}
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		return fmt.Errorf("erro ao buscar playlists do usuário '%s': %v", userID, err)
+	}
+	defer cursor.Close(context.TODO())
+
+	playlistsExist := false
+
+	for cursor.Next(context.TODO()) {
+		var playlist Playlist
+		if err := cursor.Decode(&playlist); err != nil {
+			return fmt.Errorf("erro ao decodificar playlist: %v", err)
+		}
+
+		playlistsExist = true
+		fmt.Printf("Playlist: %s\n", playlist.Name)
+		fmt.Printf("  Publica: %t\n", playlist.Public)
+		fmt.Printf("  Criada em: %s\n", playlist.CreatedAt.Format("02/01/2006 15:04:05"))
+		fmt.Printf("  Número de faixas: %d\n", len(playlist.Tracks))
+		fmt.Println("---------------------------")
+	}
+
+	if !playlistsExist {
+		fmt.Printf("Nenhuma playlist encontrada para o usuário '%s'\n", userID)
+	}
+
+	return nil
+}
+
 func main() {
 	args := os.Args[1:]
 	s1 := args[0]
@@ -236,6 +269,11 @@ func main() {
 		err := listPlaylist(database, args[2])
 		if err != nil {
 			log.Fatalf("Falha ao listar playlist: %v", err)
+		}
+	case "listplaylists":
+		err := listUserPlaylists(database, args[2])
+		if err != nil {
+			log.Fatalf("Falha ao listar playlists do usuário: %v", err)
 		}
 
 	case "rmvtrack":
