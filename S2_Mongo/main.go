@@ -43,15 +43,17 @@ func CreateTrack(id int, duration int, name string, genre string, album string) 
 
 func AddPlaylist(db *mongo.Database, playlistName string, creator string, public string) error {
 	collection := db.Collection("Playlists")
-
 	filter := bson.M{"name": playlistName}
 	var existing Playlist
-	err := collection.FindOne(context.TODO(), filter).Decode(&existing)
+
+	singleResult := collection.FindOne(context.TODO(), filter)
+
+	err := singleResult.Decode(&existing)
 
 	if err == nil {
 		return fmt.Errorf("já existe uma playlist com o nome '%s'", playlistName)
 	} else if err != mongo.ErrNoDocuments {
-		return err
+		return fmt.Errorf("erro ao buscar playlist: %w", err)
 	}
 
 	publicBool := false
@@ -104,7 +106,7 @@ func main() {
 	s1 := args[0]
 	s2 := args[1]
 	func_call := s1 + s2
-
+	log.Printf("\n%s\n", func_call)
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatal(err)
@@ -118,10 +120,13 @@ func main() {
 
 	database := client.Database("bancosproj")
 	colectionName := "Playlists"
-	collections, err := database.ListCollectionNames(context.TODO(), nil)
+
+	log.Println("Antes de listar coleções")
+	collections, err := database.ListCollectionNames(context.TODO(), bson.D{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Erro listando coleções: %v", err)
 	}
+	log.Println("Coleções listadas com sucesso:", collections)
 
 	exists := false
 	for _, c := range collections {
@@ -140,7 +145,10 @@ func main() {
 
 	switch func_call {
 	case "addplaylist":
-		AddPlaylist(database, args[2], args[3], args[4])
+		err := AddPlaylist(database, args[2], args[3], args[4])
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "addtrack":
 		num_args3, err := strconv.Atoi(args[3])
 		if err != nil {
