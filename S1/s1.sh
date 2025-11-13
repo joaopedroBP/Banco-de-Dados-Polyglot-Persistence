@@ -57,7 +57,7 @@ function handleadd_playlist() {
   fi
   user_id="$3"
   playlist_name="$4"
-  description="$5"
+  is_public="$5"
   # prints playlist id
   ./../S2_Mongo/S2_Mongo add playlist "$user_id" "$playlist_name" "$is_public" 
   exit 0
