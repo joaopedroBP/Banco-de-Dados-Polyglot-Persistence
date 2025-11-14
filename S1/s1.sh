@@ -2,6 +2,50 @@
 
 set -e
 
+
+function printhelp() {
+  echo "Usage: $0 <command> <subcommand> [args...]"
+  echo
+  echo "Commands:"
+  echo "  add      Add a new entry to the database"
+  echo "  rm       Remove an entry from the database"
+  echo "  list     List entries from the database"
+  echo "  get      Retrieve a specific entry"
+  echo
+  echo "Subcommands:"
+  echo "  user"
+  echo "  artist"
+  echo "  album"
+  echo "  track"
+  echo "  playlist"
+  echo "  genre"
+  echo "  history"
+  echo "  like"
+  echo "  mostp"
+  echo "  time"
+  echo
+  echo "Examples:"
+  echo "  $0 add user <username> <email> <password>"
+  echo "  $0 add artist <name> <description>"
+  echo "  $0 list track"
+  echo "  $0 get album <album_id>"
+  echo "  $0 rm playlist <user_id> <playlist_id>"
+  echo
+  echo "Notes:"
+  echo "  - 'mostp' is only available under: list mostp <user_id> <top_num>"
+  echo "  - 'time' can be added and removed, and listed via 'list time'"
+  echo
+  exit 1
+}
+
+# check if any of the arguments are -h or --help or help
+for arg in "$@"; do
+  if [[ "$arg" == "-h" || "$arg" == "--help" || "$arg" == "help" ]]; then
+    printhelp
+    exit 0
+  fi
+done
+
 # mostp = most playem
 accepted_subcommands=("user" "artist" "album" "track" "playlist" "genre" "history" "like" "mostp" "time")
 
